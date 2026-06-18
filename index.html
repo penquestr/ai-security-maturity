@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Security Maturity — Self-Assessment</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #0a1018; }
+  #root { min-height: 100vh; }
+  .mm-loading { color:#5b6982; font-family: ui-monospace, Menlo, monospace; font-size:13px;
+    display:flex; align-items:center; justify-content:center; min-height:100vh; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+</head>
+<body>
+<div id="root"><div class="mm-loading">Loading assessment…</div></div>
+<script type="text/babel" data-presets="react">
+const { useState } = React;
+const ICONS = {"Scale":[["path",{"d":"m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"}],["path",{"d":"m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"}],["path",{"d":"M7 21h10"}],["path",{"d":"M12 3v18"}],["path",{"d":"M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"}]],"Database":[["ellipse",{"cx":"12","cy":"5","rx":"9","ry":"3"}],["path",{"d":"M3 5V19A9 3 0 0 0 21 19V5"}],["path",{"d":"M3 12A9 3 0 0 0 21 12"}]],"Package":[["path",{"d":"m7.5 4.27 9 5.15"}],["path",{"d":"M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"}],["path",{"d":"m3.3 7 8.7 5 8.7-5"}],["path",{"d":"M12 22V12"}]],"Lock":[["rect",{"width":"18","height":"11","x":"3","y":"11","rx":"2","ry":"2"}],["path",{"d":"M7 11V7a5 5 0 0 1 10 0v4"}]],"BarChart3":[["path",{"d":"M3 3v18h18"}],["path",{"d":"M18 17V9"}],["path",{"d":"M13 17V5"}],["path",{"d":"M8 17v-3"}]],"Building2":[["path",{"d":"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"}],["path",{"d":"M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"}],["path",{"d":"M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"}],["path",{"d":"M10 6h4"}],["path",{"d":"M10 10h4"}],["path",{"d":"M10 14h4"}],["path",{"d":"M10 18h4"}]],"ChevronLeft":[["path",{"d":"m15 18-6-6 6-6"}]],"RotateCcw":[["path",{"d":"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"}],["path",{"d":"M3 3v5h5"}]],"Copy":[["rect",{"width":"14","height":"14","x":"8","y":"8","rx":"2","ry":"2"}],["path",{"d":"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"}]],"Check":[["path",{"d":"M20 6 9 17l-5-5"}]],"ArrowRight":[["path",{"d":"M5 12h14"}],["path",{"d":"m12 5 7 7-7 7"}]],"Crosshair":[["circle",{"cx":"12","cy":"12","r":"10"}],["line",{"x1":"22","x2":"18","y1":"12","y2":"12"}],["line",{"x1":"6","x2":"2","y1":"12","y2":"12"}],["line",{"x1":"12","x2":"12","y1":"6","y2":"2"}],["line",{"x1":"12","x2":"12","y1":"22","y2":"18"}]],"Code2":[["path",{"d":"m18 16 4-4-4-4"}],["path",{"d":"m6 8-4 4 4 4"}],["path",{"d":"m14.5 4-5 16"}]]};
+
+function mkIcon(name){
+  return function Icon(props){
+    var size = props.size == null ? 24 : props.size;
+    return React.createElement('svg', {
+      xmlns:'http://www.w3.org/2000/svg', width:size, height:size,
+      viewBox:'0 0 24 24', fill:'none',
+      stroke: props.color || 'currentColor',
+      strokeWidth: props.strokeWidth == null ? 2 : props.strokeWidth,
+      strokeLinecap:'round', strokeLinejoin:'round', style: props.style
+    }, ICONS[name].map(function(node,i){ return React.createElement(node[0], Object.assign({key:i}, node[1])); }));
+  };
+}
+const Scale=mkIcon('Scale'),Database=mkIcon('Database'),Code2=mkIcon('Code2'),Package=mkIcon('Package'),Lock=mkIcon('Lock'),BarChart3=mkIcon('BarChart3'),Building2=mkIcon('Building2'),ChevronLeft=mkIcon('ChevronLeft'),RotateCcw=mkIcon('RotateCcw'),Copy=mkIcon('Copy'),Check=mkIcon('Check'),ArrowRight=mkIcon('ArrowRight'),Crosshair=mkIcon('Crosshair');
+
+/*
+  AI Security Maturity — Self-Assessment
+  A mockup of the interactive, self-scoring version of the Level 0–3 maturity model.
+
+  How scoring works:
+   - Fourteen questions — two per capability domain from the book.
+   - Each answer maps to a level 0–3; a domain's level is the floor of its two answers.
+   - Overall level = floor of the average across all questions (stable, fair headline).
+   - The weakest domain is surfaced as the gap to fix first — because in security
+     you're realistically only as mature as your weakest link. That per-domain
+     scoring is also what a single linear ladder can't capture.
+
+  Drop in real branding + a results endpoint to capture emails and aggregate
+  "X% of orgs land at Level 0" — the distribution strip below is illustrative.
+*/
+
+const C = {
+  bg: "#0a1018",
+  panel: "#0e1626",
+  card: "#101d33",
+  cardHi: "#13233f",
+  line: "#1f2c44",
+  line2: "#17223a",
+  text: "#e8eef7",
+  muted: "#8593a8",
+  faint: "#5b6982",
+  teal: "#2dd4bf",
+  dim: "#1d2840",
+  mono: "ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace",
+  sans: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+};
+
+const LV = [
+  {
+    n: 0, name: "Ad Hoc", word: "Unmanaged", color: "#fb7185",
+    verdict: "Shadow AI is already in your org. You're just not watching it.",
+    summary: "There are no AI security standards. People use AI on company data with no policy, no inventory, and no guardrails.",
+    next: [
+      "Inventory where AI is already used — including the shadow tools.",
+      "Draft an initial AI security policy.",
+      "Classify the data your AI tools can reach.",
+      "Map each tool to the compliance frameworks that govern it.",
+    ],
+  },
+  {
+    n: 1, name: "Experimenting", word: "Forming", color: "#f59e0b",
+    verdict: "You can see the risk. Now you have to operationalize it.",
+    summary: "Risk is understood, a draft policy exists, AI-accessible data is classified, and tools are inventoried — but none of it is formalized.",
+    next: [
+      "Turn the draft into a comprehensive written policy: risk, data handling, developer responsibility.",
+      "Baseline your metrics before you scale adoption further.",
+      "Add secure-AI training to onboarding.",
+      "Vet AI vendors like any third party — and document the decisions.",
+    ],
+  },
+  {
+    n: 2, name: "Defined", word: "Documented", color: "#38bdf8",
+    verdict: "The program is real and written down. Now make it bite.",
+    summary: "A comprehensive policy, baselined metrics, onboarding training, and documented vendor vetting are all in place.",
+    next: [
+      "Make metrics drive decisions, not just dashboards — evaluate detection ratios on a cadence.",
+      "Put technical safeguards on your agents: sandboxing, egress control, token filtering.",
+      "Assess new tools before adoption, not after.",
+      "Get your compliance posture auditable end-to-end.",
+    ],
+  },
+  {
+    n: 3, name: "Mature", word: "Adaptive", color: "#34d399",
+    verdict: "You can prove it to an auditor. Can you prove it to an attacker?",
+    summary: "Metrics drive continuous improvement, technical safeguards contain agent blast radius, and compliance is auditable end-to-end.",
+    next: [
+      "Red-team your agent boundaries — assume a malicious PR or a poisoned skill, and see what holds.",
+      "Stand up AI-specific red teaming as its own discipline.",
+      "Track an AI SBOM: the models, skills, and external services your systems depend on.",
+      "Pressure-test the maker-checker controls that don't translate cleanly to agents.",
+    ],
+  },
+];
+
+const DOMAINS = [
+  {
+    id: "gov", name: "Governance & Policy", icon: Scale,
+    questions: [
+      {
+        q: "Is there a written AI security policy governing how your team uses AI?",
+        options: [
+          { level: 0, label: "No — people use AI tools however they like." },
+          { level: 1, label: "A draft exists, or one's in progress." },
+          { level: 2, label: "Yes — it covers risk, data handling, and developer responsibility." },
+          { level: 3, label: "Yes, and it's enforced and reviewed on a regular cadence." },
+        ],
+      },
+      {
+        q: "When an agent takes an action — opens a PR, runs a command — is there a defined escalation path?",
+        options: [
+          { level: 0, label: "No — agents act, and we find out later, if at all." },
+          { level: 1, label: "Informally — someone usually eyeballs the important stuff." },
+          { level: 2, label: "Yes — we've defined where a human reviews automated actions before they take effect." },
+          { level: 3, label: "Yes, and autonomy is tuned per task off that judgment, with the dial documented." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "data", name: "Data Handling", icon: Database,
+    questions: [
+      {
+        q: "Do you control what data your AI tools are allowed to touch?",
+        options: [
+          { level: 0, label: "Not really — it's unclear what AI can access." },
+          { level: 1, label: "We've classified the data AI tools can reach." },
+          { level: 2, label: "Data is classified and mapped to the regulations that govern it, in writing." },
+          { level: 3, label: "Access is enforced technically — redaction, filtering, least privilege." },
+        ],
+      },
+      {
+        q: "Before data goes to an external AI service, do you know whether it breaks a compliance obligation?",
+        options: [
+          { level: 0, label: "No — people paste whatever into whatever tool." },
+          { level: 1, label: "We've told people to be careful, but it isn't enforced." },
+          { level: 2, label: "We've set written guardrails on what data can go into which tools." },
+          { level: 3, label: "Guardrails are enforced and mapped to each tool's compliance scope." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "code", name: "Code Review", icon: Code2,
+    questions: [
+      {
+        q: "How does AI-generated code get reviewed before it ships?",
+        options: [
+          { level: 0, label: "It mostly ships as-is — review can't keep up." },
+          { level: 1, label: "Some review, plus ad-hoc use of AI review tools." },
+          { level: 2, label: "Layered: SAST + AI review + human on high-risk changes, required on AI PRs." },
+          { level: 3, label: "Layered and measured — detection rates tracked and tuned over time." },
+        ],
+      },
+      {
+        q: "How do you steer the AI toward secure code in the first place?",
+        options: [
+          { level: 0, label: "We don't — we take whatever it generates." },
+          { level: 1, label: "Generic prompts like 'review this for security issues.'" },
+          { level: 2, label: "Framework-specific skills with explicit examples of the vuln classes we care about." },
+          { level: 3, label: "Those skills are versioned and iterated as models and findings change." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "supply", name: "Skills Supply Chain", icon: Package,
+    questions: [
+      {
+        q: "How do you vet AI skills and extensions before installing them?",
+        note: "A recent Snyk audit found 13.4% of audited skills ship a critical-severity flaw.",
+        options: [
+          { level: 0, label: "Anyone can install a skill — no review." },
+          { level: 1, label: "We're aware of the risk and eyeball them informally." },
+          { level: 2, label: "Treated like any dependency: review, permissions, sandboxed test, logging." },
+          { level: 3, label: "Automated review tooling plus provenance checks, enforced for everyone." },
+        ],
+      },
+      {
+        q: "Once a skill is installed, do you know what it can reach and do?",
+        options: [
+          { level: 0, label: "No — installed skills run with whatever access the agent has." },
+          { level: 1, label: "We trust the source and don't really track it after install." },
+          { level: 2, label: "We log skill invocations and outputs, and test new skills outside production." },
+          { level: 3, label: "Permissions are scoped and justified per skill, with provenance tracked." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "safe", name: "Technical Safeguards", icon: Lock,
+    questions: [
+      {
+        q: "What contains an AI agent's blast radius?",
+        options: [
+          { level: 0, label: "Agents run with broad access and no sandboxing." },
+          { level: 1, label: "Some access limits, and we know we need more." },
+          { level: 2, label: "Agents are sandboxed, with egress or token filtering." },
+          { level: 3, label: "Hardened and least-privilege by default, and validated." },
+        ],
+      },
+      {
+        q: "When agents or tools chain together, what stops one bad step from cascading?",
+        options: [
+          { level: 0, label: "Nothing specific — we haven't thought about agent-to-agent chains." },
+          { level: 1, label: "We keep chains short and supervised." },
+          { level: 2, label: "Trust boundaries and checkpoints are defined between automated steps." },
+          { level: 3, label: "Cascades are contained by design, and the boundaries are tested." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "metrics", name: "Metrics & Monitoring", icon: BarChart3,
+    questions: [
+      {
+        q: "Do you measure how your AI security is performing?",
+        options: [
+          { level: 0, label: "No metrics." },
+          { level: 1, label: "We log some activity." },
+          { level: 2, label: "Adoption, detection, and false-positive rates are baselined and tracked." },
+          { level: 3, label: "Those metrics actively drive decisions and tool changes." },
+        ],
+      },
+      {
+        q: "Did you capture a baseline before rolling AI tools out?",
+        options: [
+          { level: 0, label: "No baseline — we can't tell what changed." },
+          { level: 1, label: "A rough before/after sense, nothing measured." },
+          { level: 2, label: "We baselined key metrics before adoption and compare against them." },
+          { level: 3, label: "Baselines feed a regular AI-vs-traditional detection comparison that drives decisions." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "vendor", name: "Vendor & Compliance", icon: Building2,
+    questions: [
+      {
+        q: "Are AI vendors held to the same bar as other third parties?",
+        options: [
+          { level: 0, label: "No — AI tools get adopted with no vendor review." },
+          { level: 1, label: "We loosely consider our obligations." },
+          { level: 2, label: "Vetted on retention, training, and access — decisions documented." },
+          { level: 3, label: "Vendor posture rolls into an end-to-end auditable compliance story." },
+        ],
+      },
+      {
+        q: "Could you show an auditor every AI tool in use and what data each can access?",
+        options: [
+          { level: 0, label: "No — shadow AI is everywhere and untracked." },
+          { level: 1, label: "Partially — we'd have to go digging." },
+          { level: 2, label: "Yes — we keep an inventory mapped to the data and frameworks involved." },
+          { level: 3, label: "Yes, end-to-end and auditable, with shadow-AI detection running continuously." },
+        ],
+      },
+    ],
+  },
+];
+
+const QUESTIONS = DOMAINS.flatMap((d) =>
+  d.questions.map((qq) => ({ ...qq, domainId: d.id, domain: d.name, icon: d.icon }))
+);
+
+const BENCHMARK = [
+  { lvl: 0, pct: 24 },
+  { lvl: 1, pct: 38 },
+  { lvl: 2, pct: 26 },
+  { lvl: 3, pct: 12 },
+];
+
+function Gauge({ level, height = 10, gap = 5, animate = true }) {
+  return (
+    <div style={{ display: "flex", gap, width: "100%" }}>
+      {[0, 1, 2, 3].map((i) => {
+        const on = i <= level;
+        return (
+          <div
+            key={i}
+            style={{
+              flex: 1,
+              height,
+              borderRadius: 3,
+              background: on ? LV[level].color : C.dim,
+              boxShadow: on ? `0 0 12px ${LV[level].color}40` : "none",
+              transition: animate ? "background .45s ease, box-shadow .45s ease" : "none",
+              transitionDelay: animate ? `${i * 80}ms` : "0ms",
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function App() {
+  const [screen, setScreen] = useState("intro");
+  const [idx, setIdx] = useState(0);
+  const [answers, setAnswers] = useState(Array(QUESTIONS.length).fill(null));
+  const [copied, setCopied] = useState(false);
+
+  const choose = (level) => {
+    const next = [...answers];
+    next[idx] = level;
+    setAnswers(next);
+    if (idx < QUESTIONS.length - 1) setIdx(idx + 1);
+    else setScreen("result");
+  };
+  const back = () => (idx > 0 ? setIdx(idx - 1) : setScreen("intro"));
+  const restart = () => {
+    setAnswers(Array(QUESTIONS.length).fill(null));
+    setIdx(0);
+    setCopied(false);
+    setScreen("intro");
+  };
+
+  const answered = answers.filter((a) => a !== null);
+  const avg = answered.length ? answered.reduce((s, a) => s + a, 0) / answered.length : 0;
+  const overall = Math.max(0, Math.min(3, Math.floor(avg)));
+
+  const domains = DOMAINS.map((d) => {
+    const vals = QUESTIONS
+      .map((q, i) => (q.domainId === d.id ? answers[i] : null))
+      .filter((v) => v !== null && v !== undefined);
+    const davg = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+    return { domain: d.name, icon: d.icon, level: Math.max(0, Math.min(3, Math.floor(davg))), avg: davg };
+  });
+  const weakest = domains.reduce((a, b) => (b.avg < a.avg ? b : a), domains[0]);
+  const strongest = domains.reduce((a, b) => (b.avg > a.avg ? b : a), domains[0]);
+  const lv = LV[overall];
+
+  const copyResult = async () => {
+    const text =
+      `AI Security Maturity: Level ${overall} — ${lv.name}. ` +
+      `Strongest: ${strongest.domain} (L${strongest.level}). ` +
+      `Biggest gap: ${weakest.domain} (L${weakest.level}). Average ${avg.toFixed(1)}/3. ` +
+      `Where does your org land?`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+      setCopied(false);
+    }
+  };
+
+  const wrap = {
+    background: C.bg,
+    minHeight: "100%",
+    width: "100%",
+    display: "flex",
+    justifyContent: "center",
+    padding: "28px 16px",
+    fontFamily: C.sans,
+    color: C.text,
+  };
+  const panel = {
+    width: "100%",
+    maxWidth: 580,
+    background: C.panel,
+    border: `1px solid ${C.line}`,
+    borderRadius: 18,
+    overflow: "hidden",
+    boxShadow: "0 24px 60px rgba(0,0,0,.45)",
+  };
+  const eyebrow = {
+    fontFamily: C.mono,
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    color: C.teal,
+  };
+
+  return (
+    <div className="mm-root" style={wrap}>
+      <style>{`
+        .mm-root *:focus-visible{outline:2px solid ${C.teal};outline-offset:2px;border-radius:8px;}
+        .mm-fade{animation:mmFade .35s ease both;}
+        @keyframes mmFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+        @media (prefers-reduced-motion: reduce){.mm-root *{animation:none !important;transition:none !important;}}
+        .mm-opt:hover{border-color:${C.teal}66 !important;background:${C.cardHi} !important;}
+      `}</style>
+
+      <div style={panel}>
+        {/* brand bar */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 22px", borderBottom: `1px solid ${C.line2}` }}>
+          <span style={{ fontFamily: C.mono, fontSize: 11, letterSpacing: 2, color: C.faint, textTransform: "uppercase" }}>
+            Cloud Security Partners
+          </span>
+          <span style={{ fontFamily: C.mono, fontSize: 11, color: C.faint, letterSpacing: 1 }}>v0 · mockup</span>
+        </div>
+
+        {/* ---------------- INTRO ---------------- */}
+        {screen === "intro" && (
+          <div className="mm-fade" style={{ padding: "30px 26px 28px" }}>
+            <div style={eyebrow}>AI Security · Self-Assessment</div>
+            <h1 style={{ fontSize: 27, lineHeight: 1.18, margin: "12px 0 8px", fontWeight: 650, letterSpacing: -0.4 }}>
+              How mature is your<br />AI security program?
+            </h1>
+            <p style={{ color: C.muted, fontSize: 14.5, lineHeight: 1.55, margin: "0 0 22px", maxWidth: 460 }}>
+              Fourteen questions across the domains that actually decide your posture. You'll get a level,
+              your weakest link, and the next move to climb.
+            </p>
+
+            {/* hero: the ladder as instrument */}
+            <div style={{ background: C.card, border: `1px solid ${C.line2}`, borderRadius: 14, padding: "16px 16px 6px" }}>
+              {LV.map((l) => (
+                <div key={l.n} style={{ display: "flex", alignItems: "center", gap: 13, padding: "10px 2px", borderBottom: l.n < 3 ? `1px solid ${C.line2}` : "none" }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: `${l.color}1a`, border: `1px solid ${l.color}55`, fontFamily: C.mono, fontSize: 14, fontWeight: 700, color: l.color }}>
+                    {l.n}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontFamily: C.mono, fontSize: 13.5, fontWeight: 600, color: l.color, letterSpacing: 0.3 }}>{l.name}</div>
+                    <div style={{ fontSize: 12, color: C.faint }}>{l.word}</div>
+                  </div>
+                  <div style={{ marginLeft: "auto", width: 96, flexShrink: 0 }}>
+                    <Gauge level={l.n} height={7} animate={false} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 22, flexWrap: "wrap" }}>
+              <button
+                onClick={() => { setScreen("quiz"); setIdx(0); }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 9, background: C.teal, color: "#04201d", border: "none", borderRadius: 10, padding: "12px 20px", fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: C.sans }}
+              >
+                Start the assessment <ArrowRight size={17} strokeWidth={2.4} />
+              </button>
+              <span style={{ fontFamily: C.mono, fontSize: 12, color: C.faint, letterSpacing: 0.5 }}>14 questions · ~3 min</span>
+            </div>
+          </div>
+        )}
+
+        {/* ---------------- QUIZ ---------------- */}
+        {screen === "quiz" && (() => {
+          const Q = QUESTIONS[idx];
+          const Icon = Q.icon;
+          const chosen = answers[idx];
+          return (
+            <div className="mm-fade" key={idx} style={{ padding: "22px 26px 28px" }}>
+              {/* progress */}
+              <div style={{ display: "flex", gap: 4, marginBottom: 18 }}>
+                {QUESTIONS.map((_, i) => (
+                  <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i < idx ? C.teal : i === idx ? `${C.teal}99` : C.dim, transition: "background .3s ease" }} />
+                ))}
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+                  <Icon size={16} color={C.teal} strokeWidth={2} />
+                  <span style={{ ...eyebrow, color: C.muted }}>{Q.domain}</span>
+                </div>
+                <span style={{ fontFamily: C.mono, fontSize: 12, color: C.faint }}>
+                  {String(idx + 1).padStart(2, "0")} / {String(QUESTIONS.length).padStart(2, "0")}
+                </span>
+              </div>
+
+              <h2 style={{ fontSize: 19, lineHeight: 1.32, fontWeight: 600, margin: "0 0 6px", letterSpacing: -0.2 }}>{Q.q}</h2>
+              {Q.note && <p style={{ fontSize: 12.5, color: C.faint, margin: "0 0 16px", lineHeight: 1.4 }}>{Q.note}</p>}
+              {!Q.note && <div style={{ height: 14 }} />}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                {Q.options.map((opt) => {
+                  const sel = chosen === opt.level;
+                  return (
+                    <button
+                      key={opt.level}
+                      className="mm-opt"
+                      onClick={() => choose(opt.level)}
+                      style={{
+                        textAlign: "left",
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 12,
+                        background: sel ? C.cardHi : C.card,
+                        border: `1px solid ${sel ? C.teal : C.line}`,
+                        borderRadius: 11,
+                        padding: "13px 15px",
+                        cursor: "pointer",
+                        color: C.text,
+                        fontFamily: C.sans,
+                        fontSize: 14,
+                        lineHeight: 1.4,
+                        transition: "border-color .15s ease, background .15s ease",
+                      }}
+                    >
+                      <span style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, marginTop: 1, border: `2px solid ${sel ? C.teal : C.line}`, display: "flex", alignItems: "center", justifyContent: "center", background: sel ? C.teal : "transparent" }}>
+                        {sel && <Check size={11} strokeWidth={3.5} color="#04201d" />}
+                      </span>
+                      <span>{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button onClick={back} style={{ marginTop: 20, display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: C.muted, fontSize: 13.5, cursor: "pointer", fontFamily: C.sans, padding: 4 }}>
+                <ChevronLeft size={16} /> Back
+              </button>
+            </div>
+          );
+        })()}
+
+        {/* ---------------- RESULT ---------------- */}
+        {screen === "result" && (
+          <div className="mm-fade" style={{ padding: "26px 26px 26px" }}>
+            <div style={eyebrow}>Your result</div>
+
+            {/* hero readout */}
+            <div style={{ display: "flex", alignItems: "center", gap: 18, margin: "14px 0 8px" }}>
+              <div style={{ fontFamily: C.mono, fontSize: 62, fontWeight: 700, lineHeight: 0.9, color: lv.color }}>{overall}</div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontFamily: C.mono, fontSize: 11, letterSpacing: 2, color: C.faint, textTransform: "uppercase" }}>Level</div>
+                <div style={{ fontSize: 25, fontWeight: 680, color: lv.color, letterSpacing: -0.3 }}>{lv.name}</div>
+              </div>
+            </div>
+            <div style={{ margin: "10px 0 14px" }}><Gauge level={overall} height={12} /></div>
+            <p style={{ fontSize: 15.5, lineHeight: 1.45, fontWeight: 560, margin: "0 0 6px" }}>{lv.verdict}</p>
+            <p style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.5, margin: "0 0 4px" }}>{lv.summary}</p>
+            <p style={{ fontSize: 12, color: C.faint, lineHeight: 1.5, margin: "8px 0 0" }}>
+              Overall level is the floor of your {avg.toFixed(1)}/3 average. In security you're realistically only as strong as your weakest domain — so start there.
+            </p>
+
+            {/* per-domain breakdown */}
+            <div style={{ marginTop: 22, paddingTop: 18, borderTop: `1px solid ${C.line2}` }}>
+              <div style={{ ...eyebrow, color: C.muted, marginBottom: 12 }}>By domain</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+                {domains.map((d) => {
+                  const isGap = d.domain === weakest.domain;
+                  const Icon = d.icon;
+                  return (
+                    <div key={d.domain} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <Icon size={15} color={isGap ? LV[d.level].color : C.faint} strokeWidth={2} style={{ flexShrink: 0 }} />
+                      <div style={{ width: 130, flexShrink: 0, fontSize: 13, color: isGap ? C.text : C.muted, fontWeight: isGap ? 600 : 400 }}>
+                        {d.domain}
+                        {isGap && <span style={{ fontFamily: C.mono, fontSize: 10, color: LV[d.level].color, marginLeft: 6, letterSpacing: 0.5 }}>GAP</span>}
+                      </div>
+                      <div style={{ flex: 1 }}><Gauge level={d.level} height={7} animate={false} /></div>
+                      <span style={{ fontFamily: C.mono, fontSize: 12, color: LV[d.level].color, width: 22, textAlign: "right", flexShrink: 0 }}>L{d.level}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* gap callout */}
+            <div style={{ marginTop: 20, background: C.card, border: `1px solid ${C.line}`, borderLeft: `3px solid ${LV[weakest.level].color}`, borderRadius: 10, padding: "14px 16px" }}>
+              <div style={{ fontFamily: C.mono, fontSize: 11, letterSpacing: 1, color: LV[weakest.level].color, textTransform: "uppercase", marginBottom: 6 }}>
+                Fix first · {weakest.domain}
+              </div>
+              <p style={{ fontSize: 13.5, color: C.text, lineHeight: 1.5, margin: 0 }}>
+                Your lowest-scoring domain is dragging your whole posture. It's the cheapest place to buy a level.
+              </p>
+            </div>
+
+            {/* next steps */}
+            {overall < 3 ? (
+              <div style={{ marginTop: 20 }}>
+                <div style={{ ...eyebrow, color: C.muted, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                  Climb to Level {overall + 1} · {LV[overall + 1].name}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                  {lv.next.map((step, i) => (
+                    <div key={i} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
+                      <span style={{ fontFamily: C.mono, fontSize: 12, color: LV[overall + 1].color, marginTop: 1, flexShrink: 0 }}>{String(i + 1).padStart(2, "0")}</span>
+                      <span style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.5 }}>{step}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{ marginTop: 20 }}>
+                <div style={{ ...eyebrow, color: C.muted, marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <Crosshair size={14} color={lv.color} /> What comes next
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                  {lv.next.map((step, i) => (
+                    <div key={i} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
+                      <span style={{ fontFamily: C.mono, fontSize: 12, color: lv.color, marginTop: 1, flexShrink: 0 }}>{String(i + 1).padStart(2, "0")}</span>
+                      <span style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.5 }}>{step}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* benchmark (illustrative) */}
+            <div style={{ marginTop: 22, paddingTop: 18, borderTop: `1px solid ${C.line2}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+                <span style={{ ...eyebrow, color: C.muted }}>Where orgs land</span>
+                <span style={{ fontFamily: C.mono, fontSize: 10.5, color: C.faint, letterSpacing: 0.5 }}>illustrative data</span>
+              </div>
+              <div style={{ display: "flex", gap: 4, height: 30 }}>
+                {BENCHMARK.map((b) => {
+                  const here = b.lvl === overall;
+                  return (
+                    <div key={b.lvl} style={{ flexBasis: `${b.pct}%`, position: "relative" }}>
+                      <div style={{ height: "100%", borderRadius: 5, background: here ? LV[b.lvl].color : `${LV[b.lvl].color}33`, border: here ? `1px solid ${LV[b.lvl].color}` : "1px solid transparent", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: C.mono, fontSize: 11, fontWeight: 700, color: here ? "#04201d" : LV[b.lvl].color }}>
+                        {b.pct}%
+                      </div>
+                      {here && <div style={{ position: "absolute", top: -16, left: 0, right: 0, textAlign: "center", fontFamily: C.mono, fontSize: 9.5, letterSpacing: 1, color: LV[b.lvl].color }}>YOU</div>}
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display: "flex", gap: 4, marginTop: 5 }}>
+                {BENCHMARK.map((b) => (
+                  <div key={b.lvl} style={{ flexBasis: `${b.pct}%`, textAlign: "center", fontFamily: C.mono, fontSize: 9.5, color: C.faint }}>L{b.lvl}</div>
+                ))}
+              </div>
+            </div>
+
+            {/* actions */}
+            <div style={{ display: "flex", gap: 10, marginTop: 24, flexWrap: "wrap" }}>
+              <button onClick={copyResult} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: copied ? `${C.teal}22` : C.teal, color: copied ? C.teal : "#04201d", border: copied ? `1px solid ${C.teal}` : "none", borderRadius: 10, padding: "11px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: C.sans }}>
+                {copied ? <><Check size={16} strokeWidth={3} /> Copied</> : <><Copy size={15} /> Copy my result</>}
+              </button>
+              <button onClick={restart} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "none", color: C.muted, border: `1px solid ${C.line}`, borderRadius: 10, padding: "11px 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: C.sans }}>
+                <RotateCcw size={15} /> Retake
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* footer */}
+        <div style={{ padding: "13px 22px", borderTop: `1px solid ${C.line2}`, textAlign: "center" }}>
+          <span style={{ fontSize: 11.5, color: C.faint }}>Based on the AI Security Maturity Model · </span>
+          <span style={{ fontSize: 11.5, color: C.muted }}>Thrive securely</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+
+</script>
+</body>
+</html>
